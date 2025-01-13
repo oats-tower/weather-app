@@ -19,38 +19,51 @@ function MapUpdater({ center }) {
 }
 
 function App() {
-  // State initialization
   const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
   const [weatherData, setWeatherData] = useState(null);
-  const [position, setPosition] = useState([51.505, -0.09]);  // Default map center
+  const [position, setPosition] = useState([51.505, -0.09]);
 
-  /**
-   * Fetches weather data when city changes
-   * Updates map position with new coordinates
-   */
+  const handleLocationInput = (e) => {
+    const input = e.target.value;
+    
+    if (input.includes(',')) {
+      // Split input on comma and trim whitespace
+      const [cityPart, countryPart] = input.split(',').map(part => part.trim());
+      setCity(cityPart);
+      setCountry(countryPart);
+    } else {
+      setCity(input);
+      setCountry('');
+    }
+  };
+
   useEffect(() => {
     if (city) {
       const getWeatherData = async () => {
-        const data = await fetchWeatherData(city);
-        setWeatherData(data);
-        if (data && data.coord) {
+        // Format query with country if provided
+        const query = country ? `${city},${country}` : city;
+        const data = await fetchWeatherData(query);
+        
+        if (data) {
+          setWeatherData(data);
           setPosition([data.coord.lat, data.coord.lon]);
         }
       };
       getWeatherData();
     }
-  }, [city]);
+  }, [city, country]);
 
   return (
     <div className="App">
-      <h1>World Weather</h1>
+      <h1>Weather App</h1>
       
       <div className="search-container">
         <input 
           type="text" 
-          placeholder="Enter city" 
-          value={city} 
-          onChange={(e) => setCity(e.target.value)}
+          placeholder="Enter city, country" 
+          value={city}
+          onChange={handleLocationInput}
         />
       </div>
 
@@ -85,17 +98,18 @@ function App() {
       <div className="map-container">
         <MapContainer 
           center={position} 
-          zoom={13} 
+          zoom={9} 
           style={{ height: "100%" }}
         >
           <MapUpdater center={position} />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; OpenStreetMap contributors'
+            lang="en"
           />
           {weatherData && (
             <Marker position={position}>
-              <Popup>{city}</Popup>
+              <Popup>{`${weatherData.name}, ${weatherData.sys.country}`}</Popup>
             </Marker>
           )}
         </MapContainer>
